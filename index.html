@@ -49,18 +49,19 @@
     }
     .card h2{margin:0 0 10px 0;font-size:14px;display:flex;justify-content:space-between;align-items:center}
     .badge{font-size:11px;color:#0f172a;background:#f1f5f9;border:1px solid #e2e8f0;padding:4px 8px;border-radius:999px}
+    .badge.demo{background:#ecfeff;border-color:#cffafe;color:#155e75}
 
     details{
       border:1px solid var(--line);
       border-radius:14px;
       background:var(--panel);
       padding:10px 10px;
-      margin:10px 0;
+      margin:10px 0 0;
     }
     summary{
       cursor:pointer;
       font-size:13px;
-      font-weight:800;
+      font-weight:900;
       list-style:none;
     }
     summary::-webkit-details-marker{display:none}
@@ -72,7 +73,7 @@
       padding-left:16px;
     }
     .rule li{margin:4px 0}
-    .rulehint{margin-top:8px;font-size:12px;color:#92400e}
+    .rulehint{margin-top:8px;font-size:12px;color:#92400e;line-height:1.45}
 
     .controls{
       display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px
@@ -98,11 +99,11 @@
     label{display:block;font-size:12px;font-weight:900;margin-bottom:6px}
     textarea{
       width:100%;
-      min-height:180px;
+      min-height:190px;
       border:1px solid var(--line);
       border-radius:14px;
       padding:12px;
-      font-size:16px; /* スマホで拡大しにくいサイズ */
+      font-size:16px; /* iOSの自動拡大を避ける */
       line-height:1.5;
       resize:vertical;
       outline:none;
@@ -113,7 +114,7 @@
 
     .stickybar{
       position:sticky; bottom:10px;
-      background:rgba(255,255,255,.9);
+      background:rgba(255,255,255,.92);
       backdrop-filter: blur(8px);
       border:1px solid var(--line);
       border-radius:14px;
@@ -124,7 +125,6 @@
     }
     .stickybar .sub{font-size:12px;color:var(--muted);line-height:1.35}
     .stickybar .sub strong{color:var(--text)}
-    .divider{height:1px;background:var(--line);margin:10px 0}
 
     .outcard{
       background:var(--panel);
@@ -190,7 +190,10 @@
           <li>社内ID・パスワード・社内限定URL</li>
           <li>未公開情報（売上/人事/案件名）</li>
         </ul>
-        <div class="rulehint">迷ったら固有名詞を「A社」「担当者X」に置換してください。</div>
+        <div class="rulehint">
+          迷ったら固有名詞を「A社」「担当者X」に置換してください。<br>
+          ※ このデモの入力例は説明用で、実在の判断に使えない形にしてあります。
+        </div>
       </details>
     </section>
 
@@ -205,14 +208,13 @@
             <button id="tabUser" role="tab" aria-selected="false">自分で</button>
           </div>
           <button class="btn" id="btnInsertDemo">入力例</button>
-          <button class="btn" id="btnMask">マスキング</button>
           <button class="btn" id="btnClear">クリア</button>
           <button class="btn" id="btnVoice" style="display:none;">音声入力（β）</button>
         </div>
 
         <label for="inputText">メモ・資料（そのまま貼り付け）</label>
-        <textarea id="inputText" placeholder="箇条書き・途中メモでOK（固有名詞と固有の数字は入れない）"></textarea>
-        <div class="hint">説明用サンプルは「実在の数字・判断」に使えない形にしています。</div>
+        <textarea id="inputText" placeholder="（デモ）入力例が入ります。必要なら内容を書き換えてください。"></textarea>
+        <div class="hint">ポイント：出力は「要点整理のみ」。提案・結論は出しません。不足は「追加で確認」に回します。</div>
 
         <div class="stickybar" aria-label="実行バー">
           <button class="btn primary" id="btnRun">要点を整理して見る</button>
@@ -222,11 +224,10 @@
 
       <!-- Output -->
       <div class="card" aria-label="出力">
-        <h2>出力 <span class="badge" id="demoTag" style="display:none;">🧪 デモ出力</span></h2>
+        <h2>出力 <span class="badge demo" id="demoTag" style="display:none;">🧪 デモ出力</span></h2>
+
         <div id="outputArea">
-          <div class="empty">
-            「入力例」→「要点を整理して見る」を試してください。
-          </div>
+          <div class="empty">「入力例」→「要点を整理して見る」を試してください。</div>
         </div>
 
         <div class="judgebox">
@@ -248,20 +249,36 @@
 
   <script>
     // ----------------------------
-    // Demo inputs (safe)
+    // Demo inputs (safe but "busy" + numbers)
+    // ※ 数字は入れるが、意思決定できる固有実数は避ける（レンジ/比率/回数など）
     // ----------------------------
-    const DEMO_1 = `・新施策の検討メモ
-・想定コスト：数十万円規模（正確な金額は未確定）
-・対象：既存顧客＋新規
-・実施タイミング：来期前半を想定（確定ではない）
-・成果指標：反応率を見たいが基準未定
-・懸念：過去施策との差が曖昧、担当間で前提がズレている
-・やりたいこと：論点を整理して、判断に必要な情報を揃えたい`;
+    const DEMO_1 = `【部下メモ（雑）】
+・新施策の検討（目的がまだ曖昧）
+・対象：既存＋新規（優先順位未定）
+・想定コスト：月 20〜80万円レンジ（見積未取得）
+・時期：来期前半を想定（確定ではない）
+・指標：反応率を見たいが、基準未定
+・懸念：過去施策との差が曖昧／担当間で前提がズレている
+・判断したい：まず論点を整理して、必要情報を揃えたい`;
 
-    const DEMO_2 = `今回の施策は認知拡大を目的としたキャンペーンです。
+    const DEMO_2 = `【稟議メモ（下書き）】
+・目的：既存顧客の離脱を減らしたい（どの層が離脱しているか未整理）
+・案：フォロー施策（メール/LINE/同梱物）をやりたい
+・現状：問い合わせが月に数十件／対応が属人化している
+・想定：担当工数が週に合計数時間増える可能性
+・関係者：営業/CS/制作（最終確認者が未定）
+・スケジュール：来月中に方針決め → 来期頭で開始したい（確定ではない）
+・判断材料：過去施策の比較なし／成果指標が曖昧／対象範囲が広い
+・懸念：現場任せで品質がバラつきそう`;
+
+    const DEMO_3 = `【上司レビュー待ちメモ（それっぽいが判断できない）】
+今回の施策は認知拡大を目的としたキャンペーンです。
 SNSを中心に展開し、ブランドイメージの向上を狙います。
 競合も同様の施策を行っているため、差別化が重要です。
-詳細な数値設計やスケジュールは今後詰めていきます。`;
+想定の実施期間は数週間〜数か月を想定していますが確定していません。
+詳細な数値設計・担当体制・確認フローは今後詰めていきます。`;
+
+    const DEMOS = [DEMO_1, DEMO_2, DEMO_3];
 
     // ----------------------------
     // UI helpers
@@ -273,8 +290,14 @@ SNSを中心に展開し、ブランドイメージの向上を狙います。
     const demoTag = el("demoTag");
     const modeBadge = el("modeBadge");
 
+    const tabDemo = el("tabDemo");
+    const tabUser = el("tabUser");
+    const btnInsertDemo = el("btnInsertDemo");
+    const btnClear = el("btnClear");
+    const btnRun = el("btnRun");
+
     let mode = "demo"; // demo | user
-    let demoIndex = 0; // 0 or 1
+    let demoIndex = 0;
 
     function showToast(msg){
       toast.textContent = msg;
@@ -285,37 +308,41 @@ SNSを中心に展開し、ブランドイメージの向上を狙います。
     function setMode(next){
       mode = next;
       const isDemo = mode === "demo";
-      el("tabDemo").classList.toggle("active", isDemo);
-      el("tabUser").classList.toggle("active", !isDemo);
-      el("tabDemo").setAttribute("aria-selected", isDemo ? "true" : "false");
-      el("tabUser").setAttribute("aria-selected", !isDemo ? "true" : "false");
+
+      tabDemo.classList.toggle("active", isDemo);
+      tabUser.classList.toggle("active", !isDemo);
+      tabDemo.setAttribute("aria-selected", isDemo ? "true" : "false");
+      tabUser.setAttribute("aria-selected", !isDemo ? "true" : "false");
+
       modeBadge.textContent = isDemo ? "デモ入力" : "自分で入力";
       demoTag.style.display = "none";
-      if (isDemo && inputText.value.trim().length === 0) insertDemo();
+
+      if (isDemo){
+        inputText.placeholder = "（デモ）入力例が入ります。必要なら内容を書き換えてください。";
+        insertDemo(true); // 切替時は必ず置換で入れる（クリア不要）
+      } else {
+        inputText.value = ""; // 自分でに切替時は必ず空にする（混線防止）
+        inputText.placeholder = "箇条書き・途中メモでOK（固有名詞と固有の数字は入れない）";
+        outputArea.innerHTML = `<div class="empty">入力して「要点を整理して見る」を押してください。</div>`;
+      }
     }
 
-    function insertDemo(){
-      demoIndex = (demoIndex + 1) % 2;
-      inputText.value = (demoIndex === 0) ? DEMO_1 : DEMO_2;
-      showToast("入力例をセットしました");
+    function insertDemo(fromToggle=false){
+      // 押すたびに別例へ（必ず置換）
+      demoIndex = (demoIndex + 1) % DEMOS.length;
+      inputText.value = DEMOS[demoIndex];
+      demoTag.style.display = "none";
+      outputArea.innerHTML = `<div class="empty">「要点を整理して見る」を押してください。</div>`;
+
+      if (fromToggle) showToast("デモ入力に切り替えました");
+      else showToast("入力例を切り替えました");
     }
 
     function clearAll(){
       inputText.value = "";
-      outputArea.innerHTML = `<div class="empty">「入力例」→「要点を整理して見る」を試してください。</div>`;
       demoTag.style.display = "none";
+      outputArea.innerHTML = `<div class="empty">「入力例」→「要点を整理して見る」を試してください。</div>`;
       showToast("クリアしました");
-    }
-
-    function maskText(s){
-      let t = s;
-      t = t.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "（メール）");
-      t = t.replace(/0\d{1,4}-\d{1,4}-\d{3,4}/g, "（電話）");
-      t = t.replace(/\b\d{2,4}\/\d{1,2}\/\d{1,2}\b/g, "（日付）");
-      t = t.replace(/株式会社[^\s、。]{1,12}/g, "A社");
-      t = t.replace(/有限会社[^\s、。]{1,12}/g, "A社");
-      t = t.replace(/[一-龠々〆ヵヶ]{2,4}\s?[一-龠々〆ヵヶ]{1,4}さん/g, "担当者Xさん");
-      return t;
     }
 
     // ----------------------------
@@ -325,8 +352,8 @@ SNSを中心に展開し、ブランドイメージの向上を狙います。
       const raw = text.trim();
       const lines = raw.split(/\n+/).map(s=>s.trim()).filter(Boolean);
 
-      const keywordsUndecided = ["未定","未確定","検討","今後","詰める","要整理","差別化","基準未定","想定","理想","確定ではない"];
-      const keywordsRisk = ["懸念","リスク","炎上","クレーム","ズレ","誤解","法務","情シス","契約","個人情報","漏えい","未公開"];
+      const keywordsUndecided = ["未定","未確定","検討","今後","詰める","要整理","差別化","基準未定","想定","理想","確定ではない","未取得","未整理","未設定"];
+      const keywordsRisk = ["懸念","リスク","炎上","クレーム","ズレ","誤解","法務","情シス","契約","個人情報","漏えい","未公開","属人","品質","ばらつ"];
 
       const found = { undecided: [], risk: [] };
       const hasAny = (l, arr) => arr.some(k => l.includes(k));
@@ -336,28 +363,38 @@ SNSを中心に展開し、ブランドイメージの向上を狙います。
         if (hasAny(l, keywordsRisk)) found.risk.push(l);
       }
 
-      const facts = lines.filter(l => /^([・\-]|(\d+[\.\)]))/.test(l)).slice(0, 4);
+      const facts = lines.filter(l => /^([・\-]|(\d+[\.\)]))/.test(l)).slice(0, 5);
       const undec = found.undecided.slice(0, 4);
 
       const joined = raw;
       const missing = [];
-      if (!/対象|ターゲット/.test(joined)) missing.push("対象（誰に影響する/範囲）が不明");
-      if (!/時期|期間|スケジュール|来月|来期|いつ/.test(joined)) missing.push("タイミング（いつ判断が必要か）が不明");
-      if (!/指標|KPI|成果|反応率|CV|CTR|応募/.test(joined)) missing.push("成果指標（何を見て良し悪しを決めるか）が不明");
-      if (!/範囲|対象外|優先|やらない/.test(joined)) missing.push("スコープ（やる/やらない・優先順位）が不明");
-      if (!/担当|責任|オーナー|誰が/.test(joined)) missing.push("責任者/確認者（誰が最終確認するか）が不明");
+      const hasTarget = /対象|ターゲット/.test(joined);
+      const hasTiming = /時期|期間|スケジュール|来月|来期|いつ|数週間|数か月/.test(joined);
+      const hasMetric = /指標|KPI|成果|反応率|CV|CTR|応募|解約|離脱|問い合わせ/.test(joined);
+      const hasScope = /範囲|対象外|優先|やらない|限定/.test(joined);
+      const hasOwner = /担当|責任|オーナー|最終確認|誰が|関係者/.test(joined);
+      const hasCompare = /比較|過去|実績|前年差|前回/.test(joined);
 
+      if (!hasTarget) missing.push("対象（誰に影響する/範囲）が不明");
+      if (!hasTiming) missing.push("タイミング（いつ判断が必要か）が不明");
+      if (!hasMetric) missing.push("成果指標（何を見て良し悪しを決めるか）が不明");
+      if (!hasScope) missing.push("スコープ（やる/やらない・優先順位）が不明");
+      if (!hasOwner) missing.push("責任者/確認者（誰が最終確認するか）が不明");
+      if (!hasCompare) missing.push("根拠（過去/比較データ）が不足");
+
+      // Decision points (Yes/No分岐として短く）
       const decisionPoints = [];
       if (/既存|新規/.test(joined)) decisionPoints.push("対象を「既存中心」か「新規中心」か");
-      if (/認知|ブランド/.test(joined)) decisionPoints.push("目的を「認知」優先か「獲得」優先か");
-      if (/予算|コスト|数十万|万円/.test(joined)) decisionPoints.push("費用上限（レンジ）を先に決めるか");
-      if (/SNS|広告/.test(joined)) decisionPoints.push("チャネルを「SNSのみ」か「他も併用」か");
+      if (/認知|ブランド/.test(joined)) decisionPoints.push("目的を「認知」優先か「獲得/離脱抑制」優先か");
+      if (/予算|コスト|万円|レンジ/.test(joined)) decisionPoints.push("費用上限（レンジ）を先に決めるか");
+      if (/SNS|広告|メール|LINE|同梱/.test(joined)) decisionPoints.push("チャネルを「単独」か「併用」か");
       if (/差別化|競合/.test(joined)) decisionPoints.push("差別化を「言葉/オファー/体験」のどこで作るか");
+      if (/工数|属人|体制|最終確認/.test(joined)) decisionPoints.push("運用体制（最終確認者/レビュー手順）を先に決めるか");
 
       const cautions = [];
-      if (found.risk.length) cautions.push("懸念点の優先順位が未設定（どれが最重要か不明）");
-      if (!/根拠|データ|過去|実績/.test(joined)) cautions.push("根拠（過去施策の結果/比較）が不足し、判断が感覚に寄りやすい");
-      if (/数十万|万円|売上|人事|案件/.test(joined)) cautions.push("固有の数値・未公開情報は入力しない運用が必要（マスキング前提）");
+      if (found.risk.length) cautions.push("懸念点は出ているが、優先順位が未設定（どれが最重要か不明）");
+      if (!/根拠|データ|比較|過去|実績/.test(joined)) cautions.push("根拠（過去施策の結果/比較）が不足し、判断が感覚に寄りやすい");
+      if (/万円|売上|人事|案件/.test(joined)) cautions.push("固有の数値・未公開情報は入力しない運用が必要（レンジ表現に置換）");
       cautions.push("出力は要点整理のみ。最終判断・対外発信は人が責任を持つ前提");
 
       const block1 = [];
@@ -369,9 +406,9 @@ SNSを中心に展開し、ブランドイメージの向上を狙います。
         "目的（何を達成したいか）を一言で固定する",
         "対象（誰に影響するか）を限定する",
         "成功の判断基準（何を見て良し悪しを決めるか）を決める"
-      ]).slice(0,5);
+      ]).slice(0,6);
 
-      const block3 = cautions.slice(0,5);
+      const block3 = cautions.slice(0,6);
 
       return { block1, block2, block3 };
     }
@@ -425,7 +462,7 @@ SNSを中心に展開し、ブランドイメージの向上を狙います。
         for (let i = event.resultIndex; i < event.results.length; i++){
           transcript += event.results[i][0].transcript;
         }
-        // 追記方式（既存テキストは消さない）
+        // 置換ではなく追記（既存テキストは消さない）
         const prefix = inputText.value.trim() ? (inputText.value.trim() + "\n") : "";
         inputText.value = prefix + transcript.trim();
       };
@@ -458,23 +495,18 @@ SNSを中心に展開し、ブランドイメージの向上を狙います。
     // ----------------------------
     // Events
     // ----------------------------
-    el("tabDemo").addEventListener("click", ()=> setMode("demo"));
-    el("tabUser").addEventListener("click", ()=> setMode("user"));
+    tabDemo.addEventListener("click", ()=> setMode("demo"));
+    tabUser.addEventListener("click", ()=> setMode("user"));
 
-    el("btnInsertDemo").addEventListener("click", ()=>{
-      setMode("demo");
-      insertDemo();
+    btnInsertDemo.addEventListener("click", ()=>{
+      // 入力例は「必ず置換」で切替（クリア不要）
+      if (mode !== "demo") setMode("demo");
+      else insertDemo(false);
     });
 
-    el("btnMask").addEventListener("click", ()=>{
-      if (!inputText.value.trim()){ showToast("入力が空です"); return; }
-      inputText.value = maskText(inputText.value);
-      showToast("マスキング例に置換しました");
-    });
+    btnClear.addEventListener("click", clearAll);
 
-    el("btnClear").addEventListener("click", clearAll);
-
-    el("btnRun").addEventListener("click", ()=>{
+    btnRun.addEventListener("click", ()=>{
       const t = inputText.value.trim();
       if (!t){ showToast("まず入力してください"); return; }
       renderOutput(analyze(t), (mode === "demo"));
@@ -482,8 +514,7 @@ SNSを中心に展開し、ブランドイメージの向上を狙います。
     });
 
     // init
-    setMode("demo");
-    insertDemo();
+    setMode("demo");      // デモに切替＝必ずデモ例が入る
     setupVoiceIfAvailable();
   </script>
 </body>
