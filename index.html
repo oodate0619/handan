@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>判断を早める整理デモ（第3号）</title>
+  <meta name="description" content="部下のメモや資料を、判断に必要なポイントだけに整理する体感デモ。社内で使わせて良いかを3分で判断。" />
+  <style>
+    :root{
+      --bg:#ffffff;
+      --panel:#f7f8fa;
+      --panel2:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --accent:#2563eb;
+      --accent2:#0ea5e9;
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --shadow: 0 10px 30px rgba(0,0,0,.06);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, "Noto Sans JP", "Hiragino Sans", "Yu Gothic", "Meiryo", Arial, sans-serif;
+      color:var(--text);
+      background:linear-gradient(180deg,#fff 0%, #fafafa 100%);
+    }
+    a{color:var(--accent); text-decoration:none}
+    .wrap{max-width:980px;margin:0 auto;padding:18px 14px 40px}
+    .top{
+      display:flex; flex-direction:column; gap:10px;
+      padding:16px 14px; border:1px solid var(--line);
+      border-radius:var(--radius); background:var(--panel2);
+      box-shadow: var(--shadow);
+    }
+    .title{font-size:20px; font-weight:800; letter-spacing:.2px}
+    .subtitle{font-size:14px; color:var(--muted); line-height:1.5}
+    .pillrow{display:flex; gap:8px; flex-wrap:wrap; margin-top:4px}
+    .pill{
+      font-size:12px; color:#0f172a;
+      background:#eef2ff; border:1px solid #e0e7ff;
+      padding:6px 10px; border-radius:999px;
+    }
+    .note{
+      font-size:12px; color:var(--muted);
+      padding-top:2px;
+    }
+
+    /* safety banner */
+    .safety{
+      margin-top:12px;
+      padding:12px 12px;
+      border:1px solid #fde68a;
+      background:#fffbeb;
+      border-radius:14px;
+    }
+    .safety h3{
+      margin:0 0 6px 0;
+      font-size:13px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .safety ul{
+      margin:0; padding-left:18px; color:#7c2d12;
+      font-size:13px; line-height:1.5;
+    }
+    .safety .hint{margin-top:8px;color:#92400e;font-size:12px}
+
+    .grid{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+    }
+    @media (min-width: 900px){
+      .grid{grid-template-columns: 1.05fr .95fr}
+    }
+
+    .card{
+      background:var(--panel2);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow);
+      padding:14px;
+    }
+    .card h2{
+      margin:0 0 10px 0;
+      font-size:14px;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .badge{
+      font-size:11px; color:#0f172a;
+      background:#f1f5f9;
+      border:1px solid #e2e8f0;
+      padding:4px 8px; border-radius:999px;
+      white-space:nowrap;
+    }
+    .badge.demo{background:#ecfeff;border-color:#cffafe;color:#155e75}
+
+    .controls{
+      display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+      margin-bottom:10px;
+    }
+    .seg{
+      display:flex; border:1px solid var(--line); border-radius:999px;
+      overflow:hidden; background:#fff;
+    }
+    .seg button{
+      border:0; background:transparent; padding:8px 10px;
+      font-size:12px; color:#0f172a; cursor:pointer;
+    }
+    .seg button.active{
+      background:#e0e7ff; color:#1e3a8a; font-weight:700;
+    }
+    .btn{
+      border:1px solid var(--line);
+      background:#fff;
+      padding:8px 10px;
+      border-radius:10px;
+      font-size:12px;
+      cursor:pointer;
+    }
+    .btn:hover{border-color:#cbd5e1}
+    .btn.primary{
+      border-color:#1d4ed8;
+      background:linear-gradient(180deg,#2563eb 0%, #1d4ed8 100%);
+      color:#fff;
+      font-weight:800;
+      padding:10px 12px;
+    }
+    .btn.primary:hover{filter:brightness(1.02)}
+    .btn.ghost{
+      background:#f8fafc;
+    }
+
+    label{
+      display:block; font-size:12px; color:#111827; font-weight:700;
+      margin-bottom:6px;
+    }
+    .small{font-size:12px;color:var(--muted); margin-top:4px; line-height:1.4}
+    textarea{
+      width:100%;
+      min-height:170px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      font-size:14px;
+      line-height:1.5;
+      resize:vertical;
+      outline:none;
+      background:#fff;
+    }
+    textarea:focus{border-color:#93c5fd; box-shadow:0 0 0 4px rgba(147,197,253,.25)}
+    .runrow{
+      display:flex; flex-direction:column; gap:8px; margin-top:10px;
+    }
+    @media (min-width:520px){
+      .runrow{flex-direction:row; align-items:center; justify-content:space-between}
+    }
+    .disclaimer{
+      font-size:12px;color:var(--muted); line-height:1.45;
+    }
+    .disclaimer strong{color:#111827}
+    .divider{height:1px;background:var(--line); margin:10px 0}
+
+    .outcard{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+    }
+    .outcard h3{
+      margin:0 0 6px 0;
+      font-size:13px;
+      display:flex; justify-content:space-between; align-items:center; gap:8px;
+    }
+    .outcard .tag{
+      font-size:11px; padding:3px 8px; border-radius:999px;
+      border:1px solid #e2e8f0; background:#fff; color:#334155;
+      white-space:nowrap;
+    }
+    .outcard ul{
+      margin:0; padding-left:18px;
+      font-size:13px; line-height:1.55; color:#0f172a;
+    }
+    .empty{
+      font-size:13px; color:var(--muted); line-height:1.6;
+      padding:10px; border:1px dashed #d1d5db; border-radius:14px; background:#fff;
+    }
+
+    .decision{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+      margin-top:12px;
+    }
+    @media (min-width:520px){
+      .decision{grid-template-columns:1fr 1fr}
+    }
+    .judge{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      background:#fff;
+    }
+    .judge h4{margin:0 0 6px 0;font-size:13px}
+    .judge p{margin:0;font-size:12px;color:var(--muted);line-height:1.45}
+    .judge button{
+      margin-top:10px;
+      width:100%;
+      border-radius:12px;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      background:#fff;
+      cursor:pointer;
+      font-weight:800;
+    }
+    .judge button.ok{border-color:#86efac;background:#f0fdf4;color:#14532d}
+    .judge button.hold{border-color:#fed7aa;background:#fff7ed;color:#7c2d12}
+
+    .toast{
+      position:fixed; left:50%; bottom:16px; transform:translateX(-50%);
+      background:#111827; color:#fff; font-size:13px;
+      padding:10px 12px; border-radius:12px;
+      box-shadow:0 10px 24px rgba(0,0,0,.18);
+      opacity:0; pointer-events:none;
+      transition:opacity .18s ease, transform .18s ease;
+    }
+    .toast.show{opacity:1; transform:translateX(-50%) translateY(-4px)}
+    .foot{
+      margin-top:14px; font-size:12px; color:var(--muted); line-height:1.5;
+      text-align:center;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="top" aria-label="ヘッダー">
+      <div class="title">判断を早める整理デモ</div>
+      <div class="subtitle">
+        部下のメモや資料を「そのまま読まずに」、判断に必要なポイントだけ把握できます。<br>
+        <span class="note">※ このデモは「資料作成」や「結論の代行」は行いません。最終判断は人が行う前提です。</span>
+      </div>
+      <div class="pillrow" aria-label="評価軸">
+        <div class="pill">判断が速くなるか</div>
+        <div class="pill">事故らなそうか</div>
+        <div class="pill">部下に任せられるか</div>
+      </div>
+
+      <div class="safety" role="note" aria-label="入力しないでください（仮ルール）">
+        <h3>⚠️ 入力しないでください（仮ルール）</h3>
+        <ul>
+          <li>顧客名・個人名・住所・電話・メール</li>
+          <li>契約/見積の金額や取引条件（固有の数字）</li>
+          <li>社内ID・パスワード・社内限定URL</li>
+          <li>未公開情報（売上/人事/案件名）</li>
+        </ul>
+        <div class="hint">迷ったら固有名詞を「A社」「担当者X」に置換してください。</div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="メイン">
+      <!-- Input -->
+      <div class="card" aria-label="入力">
+        <h2>
+          入力
+          <span class="badge" id="modeBadge">デモ入力</span>
+        </h2>
+
+        <div class="controls" aria-label="入力モード切替と補助">
+          <div class="seg" role="tablist" aria-label="入力モード">
+            <button id="tabDemo" class="active" role="tab" aria-selected="true">デモ入力を使う</button>
+            <button id="tabUser" role="tab" aria-selected="false">自分で入力する</button>
+          </div>
+
+          <button class="btn ghost" id="btnInsertDemo">入力例を入れる</button>
+          <button class="btn" id="btnMask">マスキング例に置換</button>
+          <button class="btn" id="btnClear">クリア</button>
+        </div>
+
+        <label for="inputText">部下が作ったメモ・資料（そのまま貼り付け）</label>
+        <textarea id="inputText" placeholder="例：箇条書きの企画メモ、途中メモ、未整理の資料テキスト（数値がなくてもOK）"></textarea>
+        <div class="small">※ 説明用サンプルは「実在の数字・判断」に使えない形にしてあります。</div>
+
+        <div class="runrow">
+          <button class="btn primary" id="btnRun">要点を整理して見る</button>
+          <div class="disclaimer">
+            <strong>出力は要点整理のみ</strong>です（提案・結論は行いません）。<br>
+            情報が足りない場合は「追加で確認すべき点」として返します。
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="small">
+          使い方の目安：①「入力例を入れる」→②「要点を整理して見る」→③「社内で使えそうか」だけ判断
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div class="card" aria-label="出力">
+        <h2>
+          出力
+          <span class="badge demo" id="demoTag" style="display:none;">🧪 デモ出力</span>
+        </h2>
+
+        <div id="outputArea">
+          <div class="empty">
+            まだ出力はありません。<br>
+            「入力例を入れる」→「要点を整理して見る」を試してください。
+          </div>
+        </div>
+
+        <div class="decision" aria-label="体験後の判断">
+          <div class="judge">
+            <h4>社内で使えそう</h4>
+            <p>仮ルール・出力の短さ・責任分界が、現場運用でも守れそう。</p>
+            <button class="ok" id="btnJudgeOk">この範囲なら使わせていい</button>
+          </div>
+          <div class="judge">
+            <h4>まだ早い（ルール未整備）</h4>
+            <p>禁止情報・レビュー担当・利用範囲が決まっておらず、事故りそう。</p>
+            <button class="hold" id="btnJudgeHold">いったん保留にする</button>
+          </div>
+        </div>
+
+        <div class="foot">
+          このページはデモです。入力内容は送信・保存されません（ブラウザ内のみで動作）。<br>
+          GitHub Pages公開時も同様に、外部連携はありません。
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // ----------------------------
+    // Demo inputs (safe)
+    // ----------------------------
+    const DEMO_1 = `・新施策の検討メモ
+・想定コスト：数十万円規模（正確な金額は未確定）
+・対象：既存顧客＋新規
+・実施タイミング：来期前半を想定（確定ではない）
+・成果指標：反応率を見たいが基準未定
+・懸念：過去施策との差が曖昧、担当間で前提がズレている
+・やりたいこと：まず論点を整理して、判断に必要な情報を揃えたい`;
+
+    const DEMO_2 = `今回の施策は認知拡大を目的としたキャンペーンです。
+SNSを中心に展開し、ブランドイメージの向上を狙います。
+競合も同様の施策を行っているため、差別化が重要です。
+詳細な数値設計やスケジュールは今後詰めていきます。`;
+
+    // ----------------------------
+    // Simple UI state
+    // ----------------------------
+    let mode = "demo"; // demo | user
+    let demoIndex = 0; // 0 or 1
+    const el = (id) => document.getElementById(id);
+
+    const inputText = el("inputText");
+    const outputArea = el("outputArea");
+    const toast = el("toast");
+    const demoTag = el("demoTag");
+    const modeBadge = el("modeBadge");
+
+    const tabDemo = el("tabDemo");
+    const tabUser = el("tabUser");
+
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(()=> toast.classList.remove("show"), 1600);
+    }
+
+    function setMode(next){
+      mode = next;
+      const isDemo = mode === "demo";
+      tabDemo.classList.toggle("active", isDemo);
+      tabUser.classList.toggle("active", !isDemo);
+      tabDemo.setAttribute("aria-selected", isDemo ? "true" : "false");
+      tabUser.setAttribute("aria-selected", !isDemo ? "true" : "false");
+      modeBadge.textContent = isDemo ? "デモ入力" : "自分で入力";
+      demoTag.style.display = "none";
+      if (isDemo && inputText.value.trim().length === 0){
+        insertDemo();
+      }
+    }
+
+    function insertDemo(){
+      // alternate between two demo styles
+      demoIndex = (demoIndex + 1) % 2;
+      inputText.value = (demoIndex === 0) ? DEMO_1 : DEMO_2;
+      showToast("入力例をセットしました");
+    }
+
+    function clearAll(){
+      inputText.value = "";
+      outputArea.innerHTML = `<div class="empty">
+        まだ出力はありません。<br>
+        「入力例を入れる」→「要点を整理して見る」を試してください。
+      </div>`;
+      demoTag.style.display = "none";
+      showToast("クリアしました");
+    }
+
+    // Very lightweight "masking" helper (demo-purpose)
+    function maskText(s){
+      // Replace likely personal identifiers / emails / phone-like patterns
+      let t = s;
+      t = t.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "（メール）");
+      t = t.replace(/0\d{1,4}-\d{1,4}-\d{3,4}/g, "（電話）");
+      t = t.replace(/\b\d{2,4}\/\d{1,2}\/\d{1,2}\b/g, "（日付）");
+      // Replace obvious company/person markers (heuristic)
+      t = t.replace(/株式会社[^\s、。]{1,12}/g, "A社");
+      t = t.replace(/有限会社[^\s、。]{1,12}/g, "A社");
+      t = t.replace(/[一-龠々〆ヵヶ]{2,4}\s?[一-龠々〆ヵヶ]{1,4}さん/g, "担当者Xさん");
+      return t;
+    }
+
+    // ----------------------------
+    // Core: "judgement-first structuring"
+    // (No external calls. Deterministic-ish heuristic.)
+    // ----------------------------
+    function analyze(text){
+      const raw = text.trim();
+      const lines = raw
+        .split(/\n+/)
+        .map(s=>s.trim())
+        .filter(Boolean);
+
+      // classify hints
+      const keywordsUndecided = ["未定","未確定","検討","今後","詰める","要整理","差別化","基準未定","想定","理想","確定ではない"];
+      const keywordsRisk = ["懸念","リスク","炎上","クレーム","ズレ","誤解","法務","情シス","契約","個人情報","漏えい","未公開"];
+      const keywordsNeed = ["必要","揃える","確認","決める","判断","前提","目的","対象","期間","予算","指標","KPI"];
+
+      const found = {
+        undecided: [],
+        risk: [],
+        need: []
+      };
+
+      const scoreLine = (l, arr) => arr.some(k => l.includes(k));
+
+      for (const l of lines){
+        if (scoreLine(l, keywordsUndecided)) found.undecided.push(l);
+        if (scoreLine(l, keywordsRisk)) found.risk.push(l);
+        if (scoreLine(l, keywordsNeed)) found.need.push(l);
+      }
+
+      // Build "facts / assumptions / missing"
+      // Facts: lines that look like declared items (・ / - / number)
+      const facts = lines.filter(l => /^([・\-]|(\d+[\.\)]))/.test(l)).slice(0, 4);
+      const undec = found.undecided.slice(0, 4);
+      const missing = [];
+
+      // Missing prompts based on absence cues
+      const joined = raw;
+      const hasTarget = /対象|ターゲット/.test(joined);
+      const hasTiming = /時期|期間|スケジュール|来月|来期|いつ/.test(joined);
+      const hasMetric = /指標|KPI|成果|反応率|CV|CTR|応募|売上/.test(joined);
+      const hasScope = /範囲|対象外|優先|やらない/.test(joined);
+      const hasOwner = /担当|責任|オーナー|誰が/.test(joined);
+
+      if (!hasTarget) missing.push("対象（誰に向ける/どの範囲に影響するか）が不明");
+      if (!hasTiming) missing.push("実施タイミング（いつ判断が必要か）が不明");
+      if (!hasMetric) missing.push("成果指標（何を見て成功/失敗とするか）が不明");
+      if (!hasScope) missing.push("スコープ（やる/やらない・優先順位）が不明");
+      if (!hasOwner) missing.push("責任者/確認者（誰が最終確認するか）が不明");
+
+      // Decision points: turn ambiguous items into yes/no questions
+      const decisionPoints = [];
+      // heuristic patterns
+      if (/既存|新規/.test(joined)) decisionPoints.push("対象を「既存中心」か「新規中心」か、どちらに寄せるか");
+      if (/認知|ブランド/.test(joined)) decisionPoints.push("目的を「認知」優先か「獲得」優先か、どちらで評価するか");
+      if (/予算|コスト|数十万|万円/.test(joined)) decisionPoints.push("費用上限（ざっくり上限レンジ）を先に決めるか");
+      if (/SNS|広告/.test(joined)) decisionPoints.push("チャネルを「SNSのみ」か「他チャネル併用」か");
+      if (/差別化|競合/.test(joined)) decisionPoints.push("差別化要素を「言葉」か「オファー」か「体験」どこで作るか");
+
+      // Risks / caution points (keep short & safe)
+      const cautions = [];
+      if (found.risk.length) cautions.push("懸念点が列挙されているが、優先順位が未設定（どれが最重要か不明）");
+      if (!/根拠|データ|過去|実績/.test(joined)) cautions.push("根拠（過去施策の結果/比較）が不足しており、判断が感覚に寄りやすい");
+      if (/数十万|万円|売上|人事|案件/.test(joined)) cautions.push("固有の数値・未公開情報は入力しない運用が必要（マスキング前提）");
+      cautions.push("出力は要点整理のみ。最終判断・対外発信は人が責任を持つ前提");
+
+      // Prepare output blocks (max 6 bullets each)
+      const block1 = [];
+      if (facts.length) block1.push(`前提（書かれていること）：${facts.map(s=>s.replace(/^([・\-]\s*)/,"")).join(" / ")}`);
+      if (undec.length) block1.push(`未確定（判断前に埋めたい）：${undec.map(s=>s.replace(/^([・\-]\s*)/,"")).join(" / ")}`);
+      if (missing.length) block1.push(`追加で確認が必要：${missing.slice(0,3).join(" / ")}`);
+
+      const block2 = (decisionPoints.length ? decisionPoints : [
+        "目的（何を達成したいか）を一言で固定する",
+        "対象（誰に影響するか）を限定する",
+        "成功の判断基準（何を見て良し悪しを決めるか）を決める"
+      ]).slice(0,5);
+
+      const block3 = cautions.slice(0,5);
+
+      return { block1, block2, block3 };
+    }
+
+    function renderOutput({block1, block2, block3}, isDemo){
+      demoTag.style.display = isDemo ? "inline-flex" : "none";
+
+      const html = `
+        <div class="outcard">
+          <h3>① まず把握すべき前提 <span class="tag">読む前にここだけ</span></h3>
+          <ul>${(block1.length ? block1 : ["入力内容が短すぎます。箇条書きで3〜5行ほど追加してください。"]).map(li=>`<li>${escapeHtml(li)}</li>`).join("")}</ul>
+        </div>
+        <div style="height:10px"></div>
+        <div class="outcard">
+          <h3>② 判断前に見るべきポイント <span class="tag">Yes/Noの分岐</span></h3>
+          <ul>${block2.map(li=>`<li>${escapeHtml(li)}</li>`).join("")}</ul>
+        </div>
+        <div style="height:10px"></div>
+        <div class="outcard">
+          <h3>③ 念のため注意したい点 <span class="tag">事故防止</span></h3>
+          <ul>${block3.map(li=>`<li>${escapeHtml(li)}</li>`).join("")}</ul>
+        </div>
+      `;
+      outputArea.innerHTML = html;
+    }
+
+    function escapeHtml(s){
+      return s
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    // ----------------------------
+    // Events
+    // ----------------------------
+    tabDemo.addEventListener("click", ()=> setMode("demo"));
+    tabUser.addEventListener("click", ()=> setMode("user"));
+
+    el("btnInsertDemo").addEventListener("click", ()=>{
+      setMode("demo");
+      insertDemo();
+    });
+
+    el("btnMask").addEventListener("click", ()=>{
+      const before = inputText.value;
+      if (!before.trim()){
+        showToast("入力が空です");
+        return;
+      }
+      inputText.value = maskText(before);
+      showToast("マスキング例に置換しました");
+    });
+
+    el("btnClear").addEventListener("click", clearAll);
+
+    el("btnRun").addEventListener("click", ()=>{
+      const t = inputText.value.trim();
+      if (!t){
+        showToast("まず入力してください");
+        return;
+      }
+      const isDemo = (mode === "demo");
+      const result = analyze(t);
+      renderOutput(result, isDemo);
+      showToast("要点を整理しました");
+    });
+
+    el("btnJudgeOk").addEventListener("click", ()=>{
+      showToast("判断：この範囲なら使わせていい");
+    });
+    el("btnJudgeHold").addEventListener("click", ()=>{
+      showToast("判断：いったん保留（ルール未整備）");
+    });
+
+    // Init: start with demo filled
+    setMode("demo");
+    insertDemo();
+  </script>
+</body>
+</html>
